@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MazeLab — Interactive maze solver and data structures visualizer. Explore BFS and DFS algorithms with real-time animation.">
+  <title>MazeLab — Interactive Maze Solver</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- TOP BAR                                                     -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <header class="topbar" role="banner">
+    <div class="topbar-brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true" width="22" height="22">
+        <rect x="1" y="1" width="6" height="6" rx="1"/>
+        <rect x="9" y="1" width="6" height="6" rx="1" opacity="0.5"/>
+        <rect x="17" y="1" width="6" height="6" rx="1"/>
+        <rect x="1" y="9" width="6" height="6" rx="1" opacity="0.3"/>
+        <rect x="9" y="9" width="6" height="6" rx="1"/>
+        <rect x="17" y="9" width="6" height="6" rx="1" opacity="0.3"/>
+        <rect x="1" y="17" width="6" height="6" rx="1"/>
+        <rect x="9" y="17" width="6" height="6" rx="1" opacity="0.5"/>
+        <rect x="17" y="17" width="6" height="6" rx="1"/>
+      </svg>
+      <span class="brand-name">MazeLab</span>
+      <span class="brand-subtitle">Maze Solver &amp; DS Visualizer</span>
+    </div>
+    <div class="topbar-status">
+      <span class="status-indicator" id="status-indicator" role="status" aria-live="polite">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Connecting…</span>
+      </span>
+      <button class="btn btn-ghost" id="btn-new-maze" title="Generate a new random maze">
+        New Maze
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MAIN WORKSPACE                                              -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <main class="workspace" id="main-workspace">
+
+    <!-- ── LEFT PANEL: maze canvas + toolbar ── -->
+    <section class="panel panel-maze" aria-label="Maze canvas">
+
+      <!-- Maze toolbar -->
+      <div class="maze-toolbar" role="toolbar" aria-label="Maze editing tools">
+        <!-- Dimensions -->
+        <div class="toolbar-group">
+          <label class="dim-label" for="input-rows">Rows</label>
+          <input class="dim-input" type="number" id="input-rows"
+                 value="15" min="3" max="51" step="2"
+                 aria-label="Number of rows">
+          <label class="dim-label" for="input-cols">Cols</label>
+          <input class="dim-input" type="number" id="input-cols"
+                 value="21" min="3" max="51" step="2"
+                 aria-label="Number of columns">
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <!-- Edit mode buttons -->
+        <div class="toolbar-group" role="group" aria-label="Edit mode">
+          <button class="btn btn-tool active" id="btn-mode-wall"
+                  data-mode="wall" title="Draw/erase walls (click & drag)"
+                  aria-pressed="true">
+            Wall
+          </button>
+          <button class="btn btn-tool" id="btn-mode-start"
+                  data-mode="start" title="Place start cell"
+                  aria-pressed="false">
+            Start
+          </button>
+          <button class="btn btn-tool" id="btn-mode-end"
+                  data-mode="end" title="Place destination cell"
+                  aria-pressed="false">
+            End
+          </button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <!-- Actions -->
+        <div class="toolbar-group">
+          <button class="btn btn-ghost" id="btn-generate" title="Generate a new maze via server">
+            Generate
+          </button>
+          <button class="btn btn-ghost" id="btn-clear" title="Clear all walls">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Maze grid container -->
+      <div class="maze-viewport" id="maze-viewport">
+        <div class="maze-grid" id="maze-grid"
+             role="grid"
+             aria-label="Maze grid — click cells to edit">
+          <!-- Cells rendered by renderer.js -->
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend" aria-label="Cell legend">
+        <div class="legend-item"><span class="legend-swatch swatch-empty"></span>Empty</div>
+        <div class="legend-item"><span class="legend-swatch swatch-wall"></span>Wall</div>
+        <div class="legend-item"><span class="legend-swatch swatch-start"></span>Start</div>
+        <div class="legend-item"><span class="legend-swatch swatch-end"></span>End</div>
+        <div class="legend-item"><span class="legend-swatch swatch-visited"></span>Explored</div>
+        <div class="legend-item"><span class="legend-swatch swatch-current"></span>Current</div>
+        <div class="legend-item"><span class="legend-swatch swatch-path"></span>Path</div>
+      </div>
+    </section>
+
+    <!-- ── RIGHT PANEL: controls, stats, info ── -->
+    <aside class="panel panel-controls" aria-label="Algorithm controls">
+
+      <!-- Algorithm selector -->
+      <div class="control-section">
+        <h2 class="section-heading">Algorithm</h2>
+        <div class="algo-selector" role="group" aria-label="Algorithm selection">
+          <label class="algo-option">
+            <input type="radio" name="algorithm" value="bfs" id="algo-bfs" checked>
+            <span class="algo-label">
+              <span class="algo-name">BFS</span>
+              <span class="algo-desc">Breadth-First Search · Queue</span>
+            </span>
+          </label>
+          <label class="algo-option">
+            <input type="radio" name="algorithm" value="dfs" id="algo-dfs">
+            <span class="algo-label">
+              <span class="algo-name">DFS</span>
+              <span class="algo-desc">Depth-First Search · Stack</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Playback controls -->
+      <div class="control-section">
+        <h2 class="section-heading">Playback</h2>
+        <div class="playback-controls">
+          <button class="btn btn-primary" id="btn-run" title="Run selected algorithm">
+            <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><polygon points="3,2 13,8 3,14"/></svg>
+            Run
+          </button>
+          <button class="btn btn-secondary" id="btn-pause" disabled title="Pause animation">
+            <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/></svg>
+            Pause
+          </button>
+          <button class="btn btn-secondary" id="btn-step" disabled title="Step forward one cell">
+            <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><polygon points="3,2 10,8 3,14"/><rect x="11" y="2" width="3" height="12"/></svg>
+            Step
+          </button>
+          <button class="btn btn-ghost" id="btn-reset-viz" title="Reset visualization">
+            <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8 A6 6 0 1 1 8 14" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="2,4 2,8 6,8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            Reset
+          </button>
+        </div>
+
+        <!-- Speed control -->
+        <div class="speed-control">
+          <label class="speed-label" for="speed-range">
+            Speed
+            <span id="speed-value" class="speed-value">50ms</span>
+          </label>
+          <input type="range" id="speed-range" class="speed-slider"
+                 min="10" max="500" value="50" step="10"
+                 aria-label="Animation speed in milliseconds per step">
+        </div>
+      </div>
+
+      <!-- Compare -->
+      <div class="control-section">
+        <h2 class="section-heading">Compare</h2>
+        <button class="btn btn-ghost btn-full" id="btn-compare"
+                title="Run both BFS and DFS on the same maze and compare results">
+          BFS vs DFS
+        </button>
+        <div class="compare-result" id="compare-result" hidden aria-live="polite">
+          <!-- Filled by app.js -->
+        </div>
+      </div>
+
+      <!-- Statistics -->
+      <div class="control-section">
+        <h2 class="section-heading">Statistics</h2>
+        <div class="stats-grid" id="stats-grid" aria-live="polite">
+          <div class="stat-row">
+            <span class="stat-label">Visited cells</span>
+            <span class="stat-value" id="stat-visited">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Path cells</span>
+            <span class="stat-value" id="stat-path-cells">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Path length (moves)</span>
+            <span class="stat-value" id="stat-path-len">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Server time</span>
+            <span class="stat-value" id="stat-time">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Result</span>
+            <span class="stat-value" id="stat-result">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanation panel -->
+      <div class="control-section explanation-section">
+        <h2 class="section-heading">Explanation</h2>
+        <div class="explanation-panel" id="explanation-panel" aria-live="polite">
+          <div class="exp-algo-info" id="exp-algo-info">
+            <span class="exp-algo-name" id="exp-algo-name">BFS</span>
+            <span class="exp-ds-badge" id="exp-ds-badge">Queue (FIFO)</span>
+          </div>
+          <p class="exp-description" id="exp-description">
+            Breadth-First Search explores cells layer by layer, using a queue
+            (FIFO) to ensure all cells at distance <em>d</em> are visited before
+            any cell at distance <em>d+1</em>. This guarantees the shortest path
+            on an unweighted grid.
+          </p>
+          <div class="exp-status" id="exp-status">
+            <span class="exp-status-label">Status</span>
+            <span class="exp-status-value" id="exp-status-value">Ready</span>
+          </div>
+          <p class="exp-step" id="exp-step">
+            Select an algorithm and press Run to start.
+          </p>
+        </div>
+      </div>
+
+      <!-- Error display -->
+      <div class="error-banner" id="error-banner" hidden role="alert" aria-live="assertive">
+        <span id="error-text"></span>
+        <button class="error-close" id="error-close" aria-label="Dismiss error">✕</button>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Scripts — no external dependencies -->
+  <script src="api.js"></script>
+  <script src="renderer.js"></script>
+  <script src="visualizer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
